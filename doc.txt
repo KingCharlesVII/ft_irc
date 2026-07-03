@@ -1,0 +1,327 @@
+
+Everything is a file:
+
+Instead of creating an API for each objectm create an unique interface.
+A file descriptor is an integer associated with an opened file. This file can be a network connection, a FIFIO, a pipe, a terminal
+So, when we want to communicate to anther program, we do this through a file descriptor.
+Furthermore, we operate on the objects with i/o operations, returning byte streams rather than strutured data.
+It allows the usage or creation of objects opening or creating files in the gloobal namespace.
+Eveen a directory is represented by a file containing an inode. 
+pipe() creates a pair of unnamable fd, we also have named pipes
+
+Exceptions: the possible operations are not only read and write:
+- a socket owns: connect()
+- a server owns: listen /accpet
+- a terminal owns ioctl()
+- a timer owns timerfd_create()
+
+-special files (/dev) represent material.
+ex: /dev/sda or /dev/null, /dev/random /dev/tty /dev/urandom (perifs)
+/dev/null -> balack hole
+/dev/zero --> infinite zero
+/dev/random -> pseudo numbers
+/dev/urandom, the same but nver blocks
+/dev/tty -> represents the current terminal
+/dev/sda ->represents the current disk
+thus, cat has no idea it talks to a perif
+Ans the permissions work everywhere chmod chown
+ex: chmod 600 /dev/sda
+
+FIFO:
+mkfifo mypipe
+
+pseudo system fil:
+/proc
+/sys
+
+IP:
+
+Internet protocol: this protocol deals with intern internet routing and is not resonsible for data integrity.
+This is a family of communication of protocols to be used with the internet. This protocol is called non-oriented-connection since
+no way for this tranfer is established. By contrast, phone net the way is already established. Thus, the IP portocol assures its best-effort deliveyr.
+These protocol are considered as non-reliable since they do not offer any warranty that the data will be corrupted, or sent in any order
+or loss of data of duplication of packets. The sole warraty if given by a ckecsum of the header. If the header contains an erros, the packet will be destroyed.
+It it is destroyed, none notification will we sent to the expeditor. IP never establishes connection
+
+OSI:
+
+Appliation:
+HTTP
+SSH
+FTP
+DNS
+...
+
+Transport:
+TCP
+UDP
+
+network:
+IP
+
+connection:
+Ethernet
+Wi-Fi 
+BLUETOOTH
+
+Physical:
+cable,
+fiber optic cable
+radio
+
+Encapsulation:
+
+When a packet is bornm the packet is wrapped in a header by the first protcol (example TFTP), then it is wrapped by the next protocol (example: UDP), then the next one (IP) again an agin until the final protocl on the harware (pysical) like ethernet.
+When the computers receives the packet, the hardware strips the ethernet deader, kernel strips IP and USDP headers, TFTP strips the TFTP header and it as finally the data.
+
+
+ navigator creates ttp GET, HTTP gives it to TCP, TCP, add its header, IP adds its header then IP transfers it to Ethernet:
+ 1) http -> get
+ 2) TCP header, http -> get
+ 3) IP header, TCP header, http -> get, data
+
+TCP:
+
+Transmission control protocol: this protocols makes sure the data arrives sequentiqlly and error-free.
+It cuts a byte stream into segments wich size depents of the MTU (maximum transmission unit). FOr most othe the ethernet network, MUT is 1500 bytes.
+So the maximum segment TCP MSS(Maximum segment size) is about 1460 bytes. The size of data segment plus the one of the IP header shoul be less thant MTU.
+MMS should be announced by each the communicating computers.
+
+TCP looks like:
+-source port
+-destination port
+-sequnce number
+-ack number
+-flags
+-window
+-checksum
+-options 
+-data
+
+Famous ports:
+20/21 FTP
+22 SSH
+23 Telnet
+25 SMPT
+53 DNS
+80 HTTP
+110 POP3
+143 IMAP
+443 HTTPS
+
+TCP identifies applications thaks to ports: identified by IP source and IP destination
+sequnce number: every bytes owns a numeral: A->1000, E -> 1004 etc. Exemple: TCP sends seauqnce = 500 hello. THe others one sends ACK = 5005:
+it waits for the 5005th one.
+
+ACK mean aknoledgement. TCP confirms the reception of the bytes, not the packets.
+TCP flags: SYN: starts the connection, FIN, ends is; RST: close it brutally.PSH asks to send and fill buffers (used in SSH, telnet)
+If a packet is lost: 1 2 3 4, reveivec: 1 3 4. It answers ACK = 2.
+Every segment owns a ckecsum, the destination calculates this value. It it differs, the packet is thrown then TCP will wait a retranmission.
+If no packet arrives, retransmission and a retransmission is raised. If the tiemout is too long, TCP uses Fast retransmit: 1 2 3 4 5.
+It receives 1 3 4 5 so it answers ACK=2 ACK=2 ACK=2.
+Stream control: receiver owns a momry buffer. It it is almost full, it says, I can still recevie 4096 bytes or 1024. THis is the receive window
+The client should not send ;ore thant the receiver indiates they can accept. At the beggining the TCP start slows since it does not know  the capacity of the network. It slows down in the event of a loss.
+TCP workd in three stages:
+-established connection
+-trasfer data
+-end the connection
+
+It establishes a conection wit hpassive waiting. It opens a coekt. THe client send a segment SYN to ther server. The server answers with a segment SYN/ACK
+Then the client confirns by a segment ACK. During the transfer of the data, realiability is ensured by a checksum.
+
+Socket:
+
+We get this file descriptor with Socket.
+We can also do this with read and write, but send() and recv() offer a greater control.
+We can use stream socket to receive packages in the same order.
+We can unser Datagram sockets so the packages arrive in any order. They are called connectionless. The data withing the packet will be error-free if it arrives.
+Datagram socket also use IP  for routing but they don't unser TCP, they use the User Datagram Protocol.
+They are called connectionless because we don't need to maintain an open connection as we do with stream sockets. We builda packet, slap an IP header on it with destinaion information and send it out.
+NO connection required. They are used when a TCP stack is unavailable. They are used with fttp (trivial file transfer protocol, little brother of FTP), dhcp, multiplayers ga;es and so on.
+We can use this scoket for games since we ignore the droped packets and perhaps truc to compensate for them (lag). THus, w use this protocol for seepd. If we send messages in chats, it does not matter until we
+update 40 positions at once.
+All the other rely on this two models (HTTP, HTTPS, SSH, DNS, game, streaming)
+Thus, when we create a socket, we deal with TCP or UDP.
+socket -> internet -> socket
+
+Everything is a flie, meansthat the operating system uses the same interface to manipute very different objects.
+FOr example:
+-a file
+-the keyboard
+-pipe
+-terminal
+-socket
+-etc
+
+There are several kinds of sockets:
+-Internet socket, the more used sockets, navigator -> web server, ssh client ->ssh server, they use AD_INET(ipv4), AF_INET6(ipv6)
+-Unix socket, they allow two programs to communicate on the same machine: /var/run/docker, the clien docker communicates with dth deamon docker via a unix socket
+-X.25 sockets, an old technology (70-90)
+
+socket() -> socket -> TCP/UDP -> IP -> Internet -> other computer -> socket -> distant program
+
+
+int type:
+SOCK_STREAM: provides sequncedm reliable, two_way conntection based byte streams
+SOCK_NONBLOCK:
+SOCK_DGRAM: datagrams wit UDP
+SOCK_RAW: raw packages, builds the IP packets by itself
+SOCK_SEQPACKET: ordonates packages
+
+int domain:
+AF_UNIX: local communication
+AF_LOCAL: synonym
+AF_INET: ipv protocol
+AF_X25: X.25
+AF_INET6: ipv6
+AF_BLUETOOTH: direct access to AF_BLUETOOTHAF_NETLINK: communication with noyau
+
+protocol:
+0 -> automatically chosen
+IPPROTO_TCP
+IPPROTO_UDP -> UDP
+ICMP -> IPPROTO_ICMP
+
+Send:
+
+send call my be used when a socket is in a connected state. The only difference between send and write is the presence of flags
+send(sockfd, buf, size, flags)
+is equivalent to:
+sendto(sockfd, buf, size, flags, NULL, 0)
+
+sendto is used on a connection-mode (SOCK_STREAM, SOCK_SEQPACKET)
+
+sockfd: is the file descriptor of the socket
+buf: buffer to pass to the function
+size: the size (in bytes) of the buffer
+falgs: 0
+There are a ot of useful flags:
+0: normal send
+MSG_DONTWIAT: full buffer -> send -> wait, the program is blocked, but with MSG_DONTWAIT, the programs ajnswer EAGAIN
+we can then use epoll, poll, select
+MSG_NOSIGNAL: without it: send() -> SIPPIE -> program termninated
+MSG_MORE: very interesting with TCP: TCP send little packages, so it waits to send
+
+
+example: send(socket_fd, message, Size(message), 0);
+
+Receive:
+
+Calls are used to receive messages from a socket. The only difference between recv and read isthe presence of flags
+recv(sockfd, buf, size, flags)
+is equivalent to:
+recvfrom(sockfd, buf, size, flags, NULL, NULL)
+The two last arguments are the address of the structure and the size of it
+with recvmsg, we can receive several buffers
+
+bind() assigns a local address to a socket
+listen() uses that socket to wait untils a re;ote process connects, then return a new socket file descripto representing taht direct bidirectional connection
+
+useful commands:
+
+WARNING: all these commands return -1 in case of error, and the standard error is set to a speficic flag
+
+ping
+nc google.com 80
+the sociket becomes a file
+curl https://example.com > page.html
+telnet
+ssh
+
+Byte order:
+
+Big endian: most significant digit first
+Little endian: most significant digit at the end
+
+The computer stroer bytes in host byte order (native order og the machine). Networkd byte order: standard order of the internet (big endian).
+We must ensure packets are in the Network Byte order.
+
+htons() -> convert the the unsigned short interger rom host byte order to network byte order.
+htonl() -> converts the unsigned int interget hostlong from host byte order to network byte order.
+
+Example: port = 80
+send_port = htons(port)
+
+Adresses:
+
+They are IPV4(32 bits) and IPV6(128) addresses
+
+loopack adress: 127.0.0.1, that means "this machine Im running on now"
+
+The subnet mask aims at making differecne between machine adresse and network adress.
+
+
+
+Port number:
+
+a 16-bit number (0 to 65535) that's like the localc address fot the conection. Thus, the IP is like the street of and hotle and the port is the room number.
+It is made to ;ake a differcne beetwen the services on the same machine, to identify wich application must receive the data on the machinet
+We can run several programs on the same machine:
+O to 1023 are well-knowns ports
+1024 to 49151 are registered ports.
+49125 to 655353 are dynamic ports
+
+Data and Strcuts:
+
+struct addrinfo {
+    int              ai_flags;     // AI_PASSIVE, AI_CANONNAME, etc.
+    int              ai_family;    // AF_INET, AF_INET6, AF_UNSPEC
+    int              ai_socktype;  // SOCK_STREAM, SOCK_DGRAM
+    int              ai_protocol;  // use 0 for "any"
+    size_t           ai_addrlen;   // size of ai_addr in bytes
+    struct sockaddr *ai_addr;      // struct sockaddr_in or _in6
+    char            *ai_canonname; // full canonical hostname
+
+    struct addrinfo *ai_next;      // linked list, next node
+};
+
+ai_family: we can change the protocol
+
+include <socket.h>
+include <netdb.h>
+include <sys/types.h>
+
+int getaddrinfo(const char *restrict node,
+                       const char *restrict service,
+                       const struct addrinfo *restrict hints,
+                       struct addrinfo **restrict res);
+
+Given nodes ander service, wich indentify internet host and a service, the function returns on or more addrinfo structures that conatin an internet addresse taht can be spcified in a call 
+to bind(), connect().
+Thus, it transforms a domain name, IP, service in one or more structures ready to be used with socket() and connect().
+
+ void freeaddrinfo(struct addrinfo *res);
+
+ struct sockaddr {
+    unsigned short    sa_family;    // address family, AF_xxx
+    char              sa_data[14];  // 14 bytes of protocol address
+}; 
+
+struct sockaddr_in {
+    short int          sin_family;  // Address family, AF_INET
+    unsigned short int sin_port;    // Port number
+    struct in_addr     sin_addr;    // Internet address
+    unsigned char      sin_zero[8]; // Same size as struct sockaddr
+};
+
+Pointers to strcuture to sockaddr_in can be cast into struct sockaddr
+ #include <netdb.h>
+
+ struct hostent *gethostbyname(const char *name);
+
+ struct hostent {
+    char  *h_name;       // nom officiel
+    char **h_aliases;    // autres noms
+    int    h_addrtype;   // type d'adresse (AF_INET)
+    int    h_length;     // taille de l'adresse
+    char **h_addr_list;  // liste d'adresses IP
+};
+
+It is totatlly obsolete and not used anymore.
+
+https://fr.wikipedia.org/wiki/Maximum_Segment_Size
+https://fr.wikipedia.org/wiki/Internet_Protocol
+https://fr.wikipedia.org/wiki/Transmission_Control_Protocol
+https://beej.us/guide/bgnet/html/#what-is-a-socket
+https://en.wikipedia.org/wiki/Everything_is_a_file
+man
