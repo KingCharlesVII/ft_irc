@@ -54,60 +54,6 @@ class AChannel {
 
 };
 
-
-
-/*class ConnectionsHandler {
-    void    operator()(std::vector<pollfd>::size_type *index) {
-    
-    }
-};*/
-
-
-
-struct RawData {
-    char buffer[512];
-    int received_bytes;
-};
-
-struct ParsingContext {
-    std::vector<std::string> tokens;
-    std::vector<ACommand*> commands;
-};
-
-struct Address {
-    addrinfo *hints;
-    addrinfo **result;
-};
-
-struct NetworkData {
-    int listening_socket;
-    int client_socket;
-    pollfd current;
-    std::vector<pollfd> fds;
-    
-};
-
-struct Network {
-    Address ipv4;
-};
-
-struct Request {
-    RawData raw;
-    ParsingContext context;
-};
-
-struct State {
-    std::vector<AChannel*> channels;
-    std::vector<AClient*> client;
-};
-
-/*class Server {
-    private:
-        State state;
-        Network network;
-        Request request;
-}*/
-
 class Server {
     private:
         char buffer[512];

@@ -136,8 +136,8 @@ void    run(std::vector<pollfd>& fds, int server_socket) {
                     int n = recv(fds[index].fd, buffer, sizeof(buffer)-1, 0); // receive data form client
                     if (n <= 0) {
                         fprintf(stdout, "Client %d disconnected\n", fds[index].fd);
-                        close(fds[index].fd);
-                        fds.erase(fds.begin() + index);
+                        close(fds[index].fd); //close current fd
+                        fds.erase(fds.begin() + index); // close all
                         --index;
                     } else {
                         buffer[n] = 0;
