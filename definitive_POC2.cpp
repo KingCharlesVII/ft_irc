@@ -9,20 +9,100 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <poll.h>
+#include <map>
 
+/**
+ * @file POC.cpp
+ * @brief Vizualisation of the program architecture.
+ * @note This pseudo program is not at terminated yet.
+ * @warning: This code must not be compiled nor exceuted.
+ */
 
+/**************************************************************************** */
 
-void    set_signal_handler() {
-    //thow
-}
+/**************************************************************************** */
 
-void    set_poll(pollfd *poll, int fd) {
-    //init
-}
-
-class ACommand {
-
+/**
+ * @brief Command code to use with std::map
+ */
+enum CommandCode {
+    /// Invite command.
+    INVITE,
+    /// Topic command.
+    TOPIC,
+    /// Mode command.
+    MODE,
+    /// Kick command.
+    KICK,
 };
+
+class Kick;
+class Invite;
+class Topic;
+class Mode;
+
+/**
+ * @brief Abstract class that implements the factory pattern
+ * @see https://refactoring.guru/design-patterns/factory-method
+ * @warning: this class does not currently work since it needs to be split into cpp files in order to avoid circular dependency
+ */
+class ACommand {
+    public:
+        typedef ACommand *(*Factory)();
+        virtual ~ACommand();
+        static ACommand *make(CommandCode code) {
+            static std::map<CommandCode, Factory> factories;
+            if (factories.empty()) {
+                factories[KICK] = &createKick;
+                factories[INVITE] = &createInvite;
+                factories[TOPIC] = &createTopic;
+                factories[MODE] = &createMode;
+            }
+            std::map<CommandCode, ACommand*>::iterator it(factories.find(code));
+            if (it == factories.end())
+                return NULL;
+            return it->second;
+        }
+        virtual void action() = 0;
+        ACommand* createKick() {
+            return new Kick();
+        }
+        ACommand* createInvite() {
+            return new Invite();
+        }
+        ACommand* createTopic() {
+            return new Kick();
+        }
+        ACommand* createMode() {
+            return new Mode();
+        }
+};
+
+
+class Kick: public ACommand {
+    public:
+        virtual void action();
+};
+
+class Invite: public ACommand {
+    public:
+        virtual void action();
+};
+
+class Topic: public ACommand {
+    public:
+        virtual void action();
+};
+
+class Mode: public ACommand {
+    public:
+        virtual void action();
+};
+
+
+/**************************************************************************** */
+
+/**************************************************************************** */
 
 class AClient {
 
@@ -33,18 +113,19 @@ class AChannel {
 };
 
 
+/**************************************************************************** */
 
-/*class ConnectionsHandler {
-    void    operator()(std::vector<pollfd>::size_type *index) {
-    
-    }
-};*/
+/**************************************************************************** */
 
-
+const std::size_t buffer_size(512);
 
 struct RawData {
-    char buffer[512];
+    char buffer[buffer_size];
     int received_bytes;
+    RawData(): received_bytes(0) {
+        for(std::size_t index(0); index < buffer_size; index++)
+            buffer[index] = 0;
+    }
 };
 
 struct ParsingContext {
@@ -56,16 +137,19 @@ struct Address {
     addrinfo *hints;
     addrinfo **result;
     Address() {
-        set_address_info(hints);
-        set_address(hints, result);
+        set_address_info();
+        set_address();
     }
     void    init_address() {
-    //init
+        //init
     }
     void    set_address_info() {
-        init_address(hints);
+        init_address();
         //set other values
     }
+    /**
+     * @throw std::excetion or derivated
+     */
     void   set_address() {
         //throw
     }
@@ -79,73 +163,99 @@ struct NetworkData {
 };
 
 struct Network {
-
+    NetworkData data;
     Address ipv4;
     Network(): ipv4(Address()){
+        set_socket();
+        set_bind_enabled();
+        set_listen_enabled();
+        set_poll();
+    } 
+    /**
+     * @throw std::excetion or derivated on error
+     */
+    void    set_socket() {
+        
+    }
+    /**
+     * @throw std::excetion or derivated on error
+     */
+    void    set_bind_enabled() {
 
     }
-    void    set_socket(const addrinfo *hints, int& socket) {
-        //throw
-    }
+    /**
+     * @throw std::excetion or derivated on error
+     */
+    void    set_listen_enabled() {
 
-    void    set_bind_enabled(int socket, addrinfo **result) {
-        //throw
     }
+    /**
+     * @throw std::excetion or derivated on error
+     */
+    void    set_non_block_mode_enabled() {
 
-    void    set_listen_enabled(int socket, int port) {
-        //throw
+    }
+    static void    set_poll() {
     }
 };
 
 struct Request {
     RawData raw;
     ParsingContext context;
+    Request(): raw(RawData()) {
+
+    }
 };
 
 struct State {
     std::vector<AChannel*> channels;
     std::vector<AClient*> client;
+    State() {
+
+    }
 };
 
-/*class Server {
+struct Parameters {
+    std::string password;
+    int port;
+    Parameters(const std::string& password, int port): password(password), port(port) {
+
+    }
+};
+
+struct SignalHandler {
+    SignalHandler() {
+        
+    }
+    void    set_signal_handler() {
+        //thow
+    }
+};
+
+
+/**************************************************************************** */
+
+/**************************************************************************** */
+
+class Server {
     private:
         State state;
         Network network;
         Request request;
-}*/
-
-class Server {
-    private:
-        char buffer[512];
-        int received_bytes;
-        std::vector<std::string> split_buffer;
-        
-        std::vector<ACommand*> commands;
-        std::vector<AChannel*> channels;
-        std::vector<AClient*> clients;
-
-        int client_socket;
-        pollfd current;
-        std::vector<pollfd> fds;
-
-        addrinfo *hints;
-        addrinfo **result;
-        int socket;
+        Parameters parameters;
+        SignalHandler signal;
     public:
-        Server() {
-            set_signal_handler();
-            set_address(hints, result);
-            set_socket(hints, socket);
-            set_bind_enabled(socket, result);
-            set_listen_enabled(socket, 10);
-            set_poll(&current, socket);
-            add_poll();
+        Server(const std::string& password, int port):  parameters(Parameters(password, port)),
+                                                        network(Network()),
+                                                        request(Request()),
+                                                        state(State()) {
         }
         ~Server() {
-            freeaddrinfo(*result);
-            close(socket);
+            freeaddrinfo(*network.ipv4.result);
+            close(network.data.listening_socket);
         }
         void    run() {
+            add_poll();
             while (true) {
                 if (has_not_received_anything())
                     break;
@@ -153,13 +263,13 @@ class Server {
             }
         }
         void    handle_connections() {
-            for (std::vector<pollfd>::size_type index(0); index < fds.size(); index++) {
+            for (std::vector<pollfd>::size_type index(0); index < network.data.fds.size(); index++) {
                 if (is_not_ready_to_read_socket(index))
                     continue;
                 if (is_concerned(index)) {
                     set_client_socket();
                     if (is_client()) {
-                        set_poll(&current, client_socket);
+                        Network::set_poll(&network.data.current, network.data.client_socket);
                         add_poll();
                         add_client();
                         continue;
@@ -172,7 +282,7 @@ class Server {
                     }
                     set_split_buffer();
                     set_commands_from_split_buffer();
-                    if (commands.empty())
+                    if (request.context.commands.empty())
                         continue;
                     handle_commands();
                 }
@@ -185,49 +295,36 @@ class Server {
 
         }
         void    add_poll() {
-            //fds.push_back(current);
-            //throw
         }
         bool has_not_received_anything() {
-            return poll(&fds[0], fds.size(), -1) == -1;
         }
         bool is_not_ready_to_read_socket(size_t index) {
-            return !(fds[index].revents & POLLIN);
         }
         bool is_concerned(std::size_t index) {
-            return fds[index].fd == socket;
         }
         bool is_client() {
-            return client_socket != 1;
         }
         bool is_received_data_incorrect() {
-            return received_bytes <= 0;
         }
         void    set_client_socket() {
-            client_socket = accept(socket, NULL, NULL);
         }
         void    add_client() {
-
         }
         void    set_received_data_from_client(std::size_t index) {
-            received_bytes = recv(fds[index].fd, buffer, sizeof(buffer)-1, 0);
-            buffer[received_bytes >= 0 ? received_bytes: 0] = 0;
         }
         void clear(size_t index) {
-            close(fds[index].fd);
-            fds.erase(fds.begin() + index);
         }
         void    set_split_buffer() {
-            /*
-            while (std::getline()) {
-                split_buffer.push(line);
-            }
-            */
         }
         void    set_commands_from_split_buffer() {
 
         }
 };
+
+
+/**************************************************************************** */
+
+/**************************************************************************** */
 
 int     main() {
 

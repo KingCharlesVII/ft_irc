@@ -2,6 +2,7 @@
 #include <iostream>
 #include <algorithm>
 #include <vector>
+#include <map>
 
 #include <fcntl.h>
 #include <sys/types.h>
@@ -9,6 +10,12 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <poll.h>
+
+/*class ConnectionsHandler {
+    void    operator()(std::vector<pollfd>::size_type *index) {
+    
+    }
+};*/
 
 void    init_address(addrinfo *hints) {
     //init
@@ -38,13 +45,75 @@ void    set_signal_handler() {
     //thow
 }
 
+void    set_non_block_mode_enabled() {
+
+}
+
 void    set_poll(pollfd *poll, int fd) {
     //init
 }
 
+enum CommandCode {
+    INVITE,
+    TOPIC,
+    MODE,
+    KICK,
+};
+
+class Kick;
+class Invite;
+class Topic;
+class Mode;
+
 class ACommand {
+    public:
+        typedef ACommand *(*Factory)();
+        virtual ~ACommand();
+        static ACommand *make(CommandCode code) {
+            static std::map<CommandCode, Factory> factories;
+            if (factories.empty()) {
+                factories[KICK] = &createKick;
+                factories[INVITE] = &createInvite;
+                factories[TOPIC] = &createTopic;
+                factories[MODE] = &createMode;
+            }
+            std::map<CommandCode, ACommand*>::iterator it(factories.find(code));
+            if (it == factories.end())
+                return NULL;
+            return it->second;
+        }
+        virtual void action() = 0;
+        ACommand* createKick() {
+            return new Kick();
+        }
+        ACommand* createInvite() {
+            return new Invite();
+        }
+        ACommand* createTopic() {
+            return new Kick();
+        }
+        ACommand* createMode() {
+            return new Mode();
+        }
+};
+
+
+class Kick: public ACommand {
 
 };
+
+class Invite: public ACommand {
+
+};
+
+class Topic: public ACommand {
+
+};
+
+class Mode: public ACommand {
+
+};
+
 
 class AClient {
 
@@ -71,8 +140,9 @@ class Server {
         addrinfo *hints;
         addrinfo **result;
         int socket;
+        const std::string& password;
     public:
-        Server() {
+        Server(const std::string& password): password(password) {
             set_signal_handler();
             set_address(hints, result);
             set_socket(hints, socket);
@@ -147,7 +217,7 @@ class Server {
             client_socket = accept(socket, NULL, NULL);
         }
         void    add_client() {
-
+            set_non_block_mode_enabled();
         }
         void    set_received_data_from_client(std::size_t index) {
             received_bytes = recv(fds[index].fd, buffer, sizeof(buffer)-1, 0);
