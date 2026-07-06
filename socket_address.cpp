@@ -9,6 +9,10 @@
 #include <poll.h>
 #include <vector>
 #include <iostream>
+#include <fcntl.h>
+#include <algorithm>
+
+//TODO: handle signals
 
 //RFC 2812 (IRC protocol) https://datatracker.ietf.org/doc/html/rfc2812
 //irc modern explanation https://modern.ircdocs.horse/
@@ -54,15 +58,70 @@ void    init_server_poll(pollfd *server_poll, int server_fd) {
     server_poll-> revents = 0;
 }
 
+void    set_socket_options(int server_socket) {
+    int local(1);
+    if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &local, sizeof(local)) == -1)
+        throw std::runtime_error("Unable to set socket options");
+}
+
+void    set_non_block_mode(int server_socket) {
+    if (fcntl(server_socket, F_SETFL, O_NONBLOCK) ==-1)
+        throw std::runtime_error("Unable to set non block mode on");
+}
+
+void    add_client() {
+
+}
+
+class ACommand {
+
+};
+
+void    execute_commands(const ACommand& command) {
+    /*
+    command.action(); use send(fds[index].fd, buffer, n, 0);
+    */
+}
+
+void    handle_commands(const std::vector<ACommand>& commands) {
+    //std::for_each(commands.begin(), command.end(), execute_command());
+}
+
+std::vector<std::string>  get_list_from_buffer(const std::string& buffer) {
+    std::vector<std::string> commands;
+    /*
+    while (std:;getline()) {
+        commands.push(line);
+    }
+    */
+   return commands;
+}
+
+std::vector<ACommand>  parse_command_from_list(const std::vector<std::string>& parsed) {
+    std::vector<ACommand> commands;
+    /*
+    for (std::vector<string>::size_type index(0); index < parsed) {
+        if ()
+    }
+    */
+   return commands;
+}
+
+struct Client {
+    int client_socket;
+    pollfd new_poll;
+    sockaddr_in ip;
+};
+
 void    run(std::vector<pollfd>& fds, int server_socket) {
     while (true) {
         if (poll(&fds[0], fds.size(), -1) == -1)
             break;
         for (std::vector<pollfd>::size_type index(0); index < fds.size(); index++) {
-            if (!fds[index].revents & POLLIN)
+            if (!fds[index].revents & POLLIN) // check if we read data
                 continue;
             if (fds[index].fd == server_socket) {
-                int client(accept(server_socket, NULL, NULL));
+                int client(accept(server_socket, NULL, NULL)); // accdpt new client
                 if (client != -1) {
                     pollfd p;
                     p.fd = client;
@@ -70,10 +129,11 @@ void    run(std::vector<pollfd>& fds, int server_socket) {
                     p.revents = 0;
                     fds.push_back(p);
                     fprintf(stdout, "Client connected");
+                    add_client();
                 } else {
                     char buffer[512];
 
-                    int n = recv(fds[index].fd, buffer, sizeof(buffer)-1, 0);
+                    int n = recv(fds[index].fd, buffer, sizeof(buffer)-1, 0); // receive data form client
                     if (n <= 0) {
                         fprintf(stdout, "Client %d disconnected\n", fds[index].fd);
                         close(fds[index].fd);
@@ -81,11 +141,12 @@ void    run(std::vector<pollfd>& fds, int server_socket) {
                         --index;
                     } else {
                         buffer[n] = 0;
-                        /*
-                        while (get_line)
-                        parse_buffer*/
-                        std::cout << buffer << std::endl;
-                        send(fds[index].fd, buffer, n, 0);
+                        const std::vector<std::string> &list(get_list_from_buffer(buffer));
+                        const std::vector<ACommand> &commands(parse_command_from_list(list));
+                        if (commands.empty())
+                            continue;
+                        handle_commands();
+                        
                     }
                 }
             }
